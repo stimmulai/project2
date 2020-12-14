@@ -532,9 +532,6 @@ app.post("/review-seller", (req, res) => {
     return;
   }
 
-  console.log("sellerReviews2", sellerReviews2);
-  console.log("transactionID", transactionID);
-
   if (sellerReviews2 !== undefined) {
     for (let j = 1; j <= sellerReviews2.size; j++) {
       if (sellerReviews2.get(j).itemId == itemId) {
@@ -548,7 +545,6 @@ app.post("/review-seller", (req, res) => {
       }
     }
   }
-
 
   transactionID = transactionID + 1;
   sellerReviews.set(seller, {
@@ -567,41 +563,51 @@ app.post("/review-seller", (req, res) => {
   res.send(JSON.stringify({ success: true }));
 });
 
+let getSellerReviews = [];
 
-  let getSellerReviews = []
-  
 app.get("/reviews", (req, res) => {
   let seller = req.query.sellerUsername;
 
-  
-   for (let i = 1; i <= sellerReviews2.size; i++) {
+  for (let i = 1; i <= sellerReviews2.size; i++) {
     if (sellerReviews2.get(i).seller == seller) {
-    
-      
-      getSellerReviews.push({from: sellerReviews2.get(i).from, numStars: sellerReviews2.get(i).numStars, contents: sellerReviews2.get(i).contents});
+      getSellerReviews.push({
+        from: sellerReviews2.get(i).from,
+        numStars: sellerReviews2.get(i).numStars,
+        contents: sellerReviews2.get(i).contents
+      });
     }
   }
-  
-  
-  res.send(JSON.stringify({ success: true, reviews: getSellerReviews}));
+
+  res.send(JSON.stringify({ success: true, reviews: getSellerReviews }));
 });
 
-
 app.get("/selling", (req, res) => {
-   let seller = req.query.sellerUsername;
-  
+  let seller = req.query.sellerUsername;
+
   if (seller === undefined) {
     res.send(
       JSON.stringify({ success: false, reason: "sellerUsername field missing" })
     );
     return;
-  }  
-  
-  
-  res.send(JSON.stringify({ success: true}));
+  }
+
+  let keys = Array.from(listingDetails.keys());
+
+  let filteredsellingList = [];
+
+  for (let i = 0; i < keys.length; i++) {
+    if (listingDetails.get(keys[i]).sellerUsername == seller) {
+      filteredsellingList.push({
+        price: listingDetails.get(keys[i]).price,
+        description: listingDetails.get(keys[i]).description,
+        itemId: listingDetails.get(keys[i]).itemId,
+        sellerUsername: listingDetails.get(keys[i]).sellerUsername
+      });
+    }
+  }
+
+  res.send(JSON.stringify({ success: true, selling: filteredsellingList }));
 });
-
-
 
 //SERVER PORTS, DO NOT DELETE
 app.listen(process.env.PORT || 3000);
