@@ -347,6 +347,8 @@ if (tokenUsername.has(givenToken) == false) {
   
  res.send(JSON.stringify({ success: true, purchased: filteredCart}));
 });
+  
+let chatLog = []
 
 app.post("/chat", (req, res) => {
   let givenToken = req.headers.token;
@@ -378,14 +380,57 @@ app.post("/chat", (req, res) => {
     return;
   }
   
+  // let timeStamp = Date.now();
+  chatLog.push(destination, {from: buyerUsername, contents: contents})
   res.send(JSON.stringify({ success: true }));
 });
 
-app.post("/chat-messsages", (req, res) => {
+
+app.post("/chat-messages", (req, res) => {
+  let givenToken = req.headers.token;
+  let buyerUsername = tokenUsername.get(givenToken)
   
-  res.send(JSON.stringify({ success: true }));
+  if (tokenUsername.has(givenToken) == false) {
+    res.send(JSON.stringify({ success: false, reason: "Invalid token" }));
+    return;
+  }
+  
+  let parsed = JSON.parse(req.body);
+  let destination = parsed.destination
+  if (destination === undefined) {
+    res.send(JSON.stringify({ success: false, reason: "destination field missing" }));
+    return;
+  }
+  
+  let expectedPassword = passwords.get(destination);
+  if (expectedPassword === undefined) {
+    res.send(JSON.stringify({ success: false, reason: "Destination user not found" }));
+    return;
+  }
+  
+  let filteredChatLog = []
+    for (let i = 0; i < chatLog.length; i++){
+    if (chatLog[i] === buyerUsername || chatLog[i] === destination){
+      filteredChatLog.push(chatLog[i+1]);
+    }
+  }
+  
+  
+  
+  res.send(JSON.stringify({ success: true, messages: filteredChatLog }));
 });
 
+app.post("/ship", (req, res) => {
+  let givenToken = req.headers.token;
+  let buyerUsername = tokenUsername.get(givenToken)
+  let parsed = JSON.parse(req.body);
+  let listingId = parsed.itemid;
+  
+  
+  
+  
+  res.send(JSON.stringify({ success: true,}));
+});
 
 //SERVER PORTS, DO NOT DELETE
 app.listen(process.env.PORT || 3000);
