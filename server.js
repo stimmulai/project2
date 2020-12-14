@@ -446,8 +446,6 @@ app.post("/ship", (req, res) => {
 app.get("/status", (req, res) => {
  let givenItemId = req.query.itemid
  
- console.log("soldItems", soldItems)
-  console.log("shippedItems", shippedItems) 
   
   if (soldItems.includes(givenItemId) == false){
       res.send(JSON.stringify({ success: false, reason: "Item not sold" }));
@@ -462,7 +460,44 @@ app.get("/status", (req, res) => {
   res.send(JSON.stringify({ success: true, status: "shipped"}));
 });
 
+  let sellerReviews = new Map()
+  
+app.post("/review-seller", (req, res) => {
+  let givenToken = req.headers.token;
+  let givenUsername = tokenUsername.get(givenToken)
+  let parsed = JSON.parse(req.body);
+  let numStars = parsed.numStars;
+  let contents = parsed.contents;
+  let itemId = parsed.itemid;
+  let seller = listingDetails.get(itemId).sellerUsername
+  
+  if (tokenUsername.has(givenToken) == false) {
+    res.send(JSON.stringify({ success: false, reason: "Invalid token" }));
+    return;
+  }
+  
+  let filteredCart = []
+  let itemFind = []
+ for (let i = 0; i < cart.length; i++){
+    if (cart[i].buyer === givenUsername){
+      filteredCart.push(cart[i+1]);
+    }
+  }
+  
+  console.log("filteredCart", filteredCart)
+  console.log("item find", (filteredCart.find(obj => obj.itemId == itemId)))
+  
+  if (filteredCart.includes(itemId) == false){
+    res.send(JSON.stringify({ success: false, reason: "User has not purchased this item" }));
+    return; 
+  }
+  
+  
+  sellerReviews.set(seller, {from: givenUsername, numStars: numStars, contents: contents})
 
+  
+ res.send(JSON.stringify({ success: true}));
+});
 
 
 
