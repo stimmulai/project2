@@ -182,7 +182,6 @@ app.get("/listing", (req, res) => {
     return;
   }
 
- 
   res.send(
     JSON.stringify({
       success: true,
@@ -198,25 +197,27 @@ app.post("/modify-listing", (req, res) => {
   let newPrice = parsed.price;
   let newDescription = parsed.description;
   let loggedUser = tokenUsername.get(givenToken);
-  
-   if (listingId === undefined) {
-    res.send(JSON.stringify({ success: false, reason: "itemid field missing" }));
+
+  if (listingId === undefined) {
+    res.send(
+      JSON.stringify({ success: false, reason: "itemid field missing" })
+    );
     return;
   }
 
-  if (newDescription  === undefined) {
-    newDescription = listing.get(listingId).description
+  if (newDescription === undefined) {
+    newDescription = listing.get(listingId).description;
   }
-  
-   if (newPrice  === undefined) {
-    newPrice = listing.get(listingId).price
+
+  if (newPrice === undefined) {
+    newPrice = listing.get(listingId).price;
   }
-  
-  listing.delete(listingId)
-    listing.set(listingId, { price: newPrice, description: newDescription });
-  
-  listingDetails.delete(listingId)
-    listingDetails.set(listingId, {
+
+  listing.delete(listingId);
+  listing.set(listingId, { price: newPrice, description: newDescription });
+
+  listingDetails.delete(listingId);
+  listingDetails.set(listingId, {
     price: newPrice,
     description: newDescription,
     itemId: listingId,
@@ -226,283 +227,387 @@ app.post("/modify-listing", (req, res) => {
 });
 
 // let userCart = new Map()
-let cart = []
+let cart = [];
 app.post("/add-to-cart", (req, res) => {
-  
   let parsed = JSON.parse(req.body);
   let givenToken = req.headers.token;
   let listingId = parsed.itemid;
-
 
   if (tokenUsername.has(givenToken) == false) {
     res.send(JSON.stringify({ success: false, reason: "Invalid token" }));
     return;
   }
-  
+
   if (listingId === undefined) {
-    res.send(JSON.stringify({ success: false, reason: "itemid field missing" }));
+    res.send(
+      JSON.stringify({ success: false, reason: "itemid field missing" })
+    );
     return;
   }
-  
+
   if (listing.has(listingId) == false) {
     res.send(JSON.stringify({ success: false, reason: "Item not found" }));
     return;
   }
-  
-  let description = listingDetails.get(listingId).description
+
+  let description = listingDetails.get(listingId).description;
   // let itemId = listingDetails.get(listingId).itemId
-  let buyer = tokenUsername.get(givenToken)
-  let username = listingDetails.get(listingId).sellerUsername
-  let price = listingDetails.get(listingId).price
-  
- 
-  cart.push({buyer: buyer},{price:price, description:description , itemId: listingId  , sellerUsername: username})
+  let buyer = tokenUsername.get(givenToken);
+  let username = listingDetails.get(listingId).sellerUsername;
+  let price = listingDetails.get(listingId).price;
+
+  cart.push(
+    { buyer: buyer },
+    {
+      price: price,
+      description: description,
+      itemId: listingId,
+      sellerUsername: username
+    }
+  );
 
   res.send(JSON.stringify({ success: true }));
 });
 
-
 app.get("/cart", (req, res) => {
   let givenToken = req.headers.token;
-  let buyerUsername = tokenUsername.get(givenToken)
-  let filteredCart = []
-  
+  let buyerUsername = tokenUsername.get(givenToken);
+  let filteredCart = [];
+
   if (tokenUsername.has(givenToken) == false) {
     res.send(JSON.stringify({ success: false, reason: "Invalid token" }));
     return;
   }
- 
 
-  
-  for (let i = 0; i < cart.length; i++){
-    if (cart[i].buyer === buyerUsername){
-      filteredCart.push(cart[i+1]);
+  for (let i = 0; i < cart.length; i++) {
+    if (cart[i].buyer === buyerUsername) {
+      filteredCart.push(cart[i + 1]);
     }
   }
-  
-  res.send(JSON.stringify({ success: true, cart: filteredCart}));
+
+  res.send(JSON.stringify({ success: true, cart: filteredCart }));
 });
-  
-  let soldItems = []
-  let filteredCart_checkout = []
-  let purchaseList = new Map()
-  
+
+let soldItems = [];
+let filteredCart_checkout = [];
+let purchaseList = new Map();
+
 app.post("/checkout", (req, res) => {
   let givenToken = req.headers.token;
-  let buyerUsername = tokenUsername.get(givenToken)
-  
+  let buyerUsername = tokenUsername.get(givenToken);
+
   if (tokenUsername.has(givenToken) == false) {
     res.send(JSON.stringify({ success: false, reason: "Invalid token" }));
     return;
   }
-  
-  for (let i = 0; i < cart.length; i++){
-    if (cart[i].buyer === buyerUsername){
-      filteredCart_checkout.push({buyer: buyerUsername, itemId: cart[i+1].itemId});
-      soldItems.push(cart[i+1].itemId)
+
+  for (let i = 0; i < cart.length; i++) {
+    if (cart[i].buyer === buyerUsername) {
+      filteredCart_checkout.push({
+        buyer: buyerUsername,
+        itemId: cart[i + 1].itemId
+      });
+      soldItems.push(cart[i + 1].itemId);
     }
   }
- 
+
   if (filteredCart_checkout.length === 0) {
     res.send(JSON.stringify({ success: false, reason: "Empty cart" }));
     return;
   }
-  
 
-  
-   for (let i = 0; i < filteredCart_checkout.length; i++){
-    for (let j = 0; j < filteredCart_checkout.length; j++){
-      if (filteredCart_checkout[i].itemId == filteredCart_checkout[j].itemId && i !== j && filteredCart_checkout[i].buyer ==  buyerUsername){
-      res.send(JSON.stringify({ success: false, reason: "Item in cart no longer available" }));
-      return;
-  }
+  for (let i = 0; i < filteredCart_checkout.length; i++) {
+    for (let j = 0; j < filteredCart_checkout.length; j++) {
+      if (
+        filteredCart_checkout[i].itemId == filteredCart_checkout[j].itemId &&
+        i !== j &&
+        filteredCart_checkout[i].buyer == buyerUsername
+      ) {
+        res.send(
+          JSON.stringify({
+            success: false,
+            reason: "Item in cart no longer available"
+          })
+        );
+        return;
       }
     }
+  }
 
-  
-  res.send(JSON.stringify({ success: true}));
+  res.send(JSON.stringify({ success: true }));
 });
 
 app.get("/purchase-history", (req, res) => {
   let givenToken = req.headers.token;
-  let buyerUsername = tokenUsername.get(givenToken)
-  let filteredCart = []
-if (tokenUsername.has(givenToken) == false) {
+  let buyerUsername = tokenUsername.get(givenToken);
+  let filteredCart = [];
+  if (tokenUsername.has(givenToken) == false) {
     res.send(JSON.stringify({ success: false, reason: "Invalid token" }));
     return;
   }
- 
- for (let i = 0; i < cart.length; i++){
-    if (cart[i].buyer === buyerUsername){
-      filteredCart.push(cart[i+1]);
+
+  for (let i = 0; i < cart.length; i++) {
+    if (cart[i].buyer === buyerUsername) {
+      filteredCart.push(cart[i + 1]);
     }
   }
-  
- res.send(JSON.stringify({ success: true, purchased: filteredCart}));
+
+  res.send(JSON.stringify({ success: true, purchased: filteredCart }));
 });
-  
-let chatLog = []
+
+let chatLog = [];
 
 app.post("/chat", (req, res) => {
   let givenToken = req.headers.token;
-  
-  let buyerUsername = tokenUsername.get(givenToken)
-  
+
+  let buyerUsername = tokenUsername.get(givenToken);
+
   if (tokenUsername.has(givenToken) == false) {
     res.send(JSON.stringify({ success: false, reason: "Invalid token" }));
     return;
   }
-  
+
   let parsed = JSON.parse(req.body);
-  let destination = parsed.destination
-  let contents = parsed.contents
-  
+  let destination = parsed.destination;
+  let contents = parsed.contents;
+
   if (destination === undefined) {
-    res.send(JSON.stringify({ success: false, reason: "destination field missing" }));
+    res.send(
+      JSON.stringify({ success: false, reason: "destination field missing" })
+    );
     return;
   }
-  
-  if (contents  === undefined) {
-    res.send(JSON.stringify({ success: false, reason: "contents field missing" }));
+
+  if (contents === undefined) {
+    res.send(
+      JSON.stringify({ success: false, reason: "contents field missing" })
+    );
     return;
   }
-  
+
   let expectedPassword = passwords.get(destination);
   if (expectedPassword === undefined) {
-    res.send(JSON.stringify({ success: false, reason: "Destination user does not exist" }));
+    res.send(
+      JSON.stringify({
+        success: false,
+        reason: "Destination user does not exist"
+      })
+    );
     return;
   }
-  
+
   // let timeStamp = Date.now();
-  chatLog.push(destination, {from: buyerUsername, contents: contents})
+  chatLog.push(destination, { from: buyerUsername, contents: contents });
   res.send(JSON.stringify({ success: true }));
 });
 
-
 app.post("/chat-messages", (req, res) => {
   let givenToken = req.headers.token;
-  let buyerUsername = tokenUsername.get(givenToken)
-  
+  let buyerUsername = tokenUsername.get(givenToken);
+
   if (tokenUsername.has(givenToken) == false) {
     res.send(JSON.stringify({ success: false, reason: "Invalid token" }));
     return;
   }
-  
+
   let parsed = JSON.parse(req.body);
-  let destination = parsed.destination
+  let destination = parsed.destination;
   if (destination === undefined) {
-    res.send(JSON.stringify({ success: false, reason: "destination field missing" }));
+    res.send(
+      JSON.stringify({ success: false, reason: "destination field missing" })
+    );
     return;
   }
-  
+
   let expectedPassword = passwords.get(destination);
   if (expectedPassword === undefined) {
-    res.send(JSON.stringify({ success: false, reason: "Destination user not found" }));
+    res.send(
+      JSON.stringify({ success: false, reason: "Destination user not found" })
+    );
     return;
   }
-  
-  let filteredChatLog = []
-    for (let i = 0; i < chatLog.length; i++){
-    if (chatLog[i] === buyerUsername || chatLog[i] === destination){
-      filteredChatLog.push(chatLog[i+1]);
+
+  let filteredChatLog = [];
+  for (let i = 0; i < chatLog.length; i++) {
+    if (chatLog[i] === buyerUsername || chatLog[i] === destination) {
+      filteredChatLog.push(chatLog[i + 1]);
     }
   }
-  
-  
-  
+
   res.send(JSON.stringify({ success: true, messages: filteredChatLog }));
 });
 
-  let shippedItems = new Map()
-  
+let shippedItems = new Map();
+
 app.post("/ship", (req, res) => {
   let givenToken = req.headers.token;
-  let givenUsername = tokenUsername.get(givenToken)
+  let givenUsername = tokenUsername.get(givenToken);
   let parsed = JSON.parse(req.body);
   let listingId = parsed.itemid;
-  
-  if (soldItems.includes(listingId) == false){
+
+  if (soldItems.includes(listingId) == false) {
     res.send(JSON.stringify({ success: false, reason: "Item was not sold" }));
     return;
   }
-  
-  if (shippedItems.has(listingId)){
-    res.send(JSON.stringify({ success: false, reason: "Item has already shipped" }));
+
+  if (shippedItems.has(listingId)) {
+    res.send(
+      JSON.stringify({ success: false, reason: "Item has already shipped" })
+    );
     return;
   }
-  
-  
-  if (listingDetails.has(listingId) == false || (listingDetails.get(listingId).sellerUsername) !== givenUsername) {
-    res.send(JSON.stringify({ success: false, reason: "User is not selling that item" }));
+
+  if (
+    listingDetails.has(listingId) == false ||
+    listingDetails.get(listingId).sellerUsername !== givenUsername
+  ) {
+    res.send(
+      JSON.stringify({
+        success: false,
+        reason: "User is not selling that item"
+      })
+    );
     return;
   }
-  
-  shippedItems.set(listingId, {status: "shipped"})
-  res.send(JSON.stringify({ success: true}));
+
+  shippedItems.set(listingId, { status: "shipped" });
+  res.send(JSON.stringify({ success: true }));
 });
-
-
 
 app.get("/status", (req, res) => {
- let givenItemId = req.query.itemid
- 
-  
-  if (soldItems.includes(givenItemId) == false){
-      res.send(JSON.stringify({ success: false, reason: "Item not sold" }));
-     return;
-  }
-  
-  if (shippedItems.has(givenItemId) == false){
-     res.send(JSON.stringify({ success: true, status: "not-shipped" }));
-     return;
+  let givenItemId = req.query.itemid;
+
+  if (soldItems.includes(givenItemId) == false) {
+    res.send(JSON.stringify({ success: false, reason: "Item not sold" }));
+    return;
   }
 
-  res.send(JSON.stringify({ success: true, status: "shipped"}));
+  if (shippedItems.has(givenItemId) == false) {
+    res.send(JSON.stringify({ success: true, status: "not-shipped" }));
+    return;
+  }
+
+  res.send(JSON.stringify({ success: true, status: "shipped" }));
 });
 
-  let sellerReviews = new Map()
-  
+let sellerReviews = new Map();
+let sellerReviews2 = new Map();
+let transactionID = 0;
+
 app.post("/review-seller", (req, res) => {
   let givenToken = req.headers.token;
-  let givenUsername = tokenUsername.get(givenToken)
+  let givenUsername = tokenUsername.get(givenToken);
   let parsed = JSON.parse(req.body);
   let numStars = parsed.numStars;
   let contents = parsed.contents;
   let itemId = parsed.itemid;
-  let seller = listingDetails.get(itemId).sellerUsername
-  
+  let seller = listingDetails.get(itemId).sellerUsername;
+  let sellerCheck = "";
+
   if (tokenUsername.has(givenToken) == false) {
     res.send(JSON.stringify({ success: false, reason: "Invalid token" }));
     return;
   }
-  
-  let filteredCart = []
-  let itemFind = []
- for (let i = 0; i < cart.length; i++){
-    if (cart[i].buyer === givenUsername){
-      filteredCart.push(cart[i+1]);
+
+  let filteredCart = [];
+  let itemFind = [];
+  for (let i = 0; i < cart.length; i++) {
+    if (cart[i].buyer === givenUsername) {
+      filteredCart.push(cart[i + 1]);
     }
   }
-  
-  console.log("filteredCart", filteredCart)
-  console.log("item find", (filteredCart.find(obj => obj.itemId == itemId)))
-  
-  if (filteredCart.includes(itemId) == false){
-    res.send(JSON.stringify({ success: false, reason: "User has not purchased this item" }));
-    return; 
-  }
-  
-  
-  sellerReviews.set(seller, {from: givenUsername, numStars: numStars, contents: contents})
 
-  
- res.send(JSON.stringify({ success: true}));
+  let test = filteredCart.find(obj => obj.itemId == itemId);
+  if (test !== undefined) {
+    sellerCheck = test.sellerUsername;
+  }
+
+  if (filteredCart.includes(itemId) == false && sellerCheck !== seller) {
+    res.send(
+      JSON.stringify({
+        success: false,
+        reason: "User has not purchased this item"
+      })
+    );
+    return;
+  }
+
+  if (sellerReviews2 !== undefined) {
+    for (let j = 1; j <= sellerReviews2.size; j++) {
+      if (sellerReviews2.get(j).itemId == itemId) {
+        console.log("j", j);
+        res.send(
+          JSON.stringify({
+            success: false,
+            reason: "This transaction was already reviewed"
+          })
+        );
+      }
+    }
+  }
+
+  transactionID = transactionID + 1;
+  sellerReviews.set(seller, {
+    from: givenUsername,
+    numStars: numStars,
+    contents: contents
+  });
+  sellerReviews2.set(transactionID, {
+    from: givenUsername,
+    numStars: numStars,
+    contents: contents,
+    itemId: itemId,
+    seller: seller
+  });
+
+  res.send(JSON.stringify({ success: true }));
 });
 
+let getSellerReviews = [];
 
+app.get("/reviews", (req, res) => {
+  let seller = req.query.sellerUsername;
 
+  for (let i = 1; i <= sellerReviews2.size; i++) {
+    if (sellerReviews2.get(i).seller == seller) {
+      getSellerReviews.push({
+        from: sellerReviews2.get(i).from,
+        numStars: sellerReviews2.get(i).numStars,
+        contents: sellerReviews2.get(i).contents
+      });
+    }
+  }
 
+  res.send(JSON.stringify({ success: true, reviews: getSellerReviews }));
+});
 
+app.get("/selling", (req, res) => {
+  let seller = req.query.sellerUsername;
+
+  if (seller === undefined) {
+    res.send(
+      JSON.stringify({ success: false, reason: "sellerUsername field missing" })
+    );
+    return;
+  }
+
+  let keys = Array.from(listingDetails.keys());
+
+  let filteredsellingList = [];
+
+  for (let i = 0; i < keys.length; i++) {
+    if (listingDetails.get(keys[i]).sellerUsername == seller) {
+      filteredsellingList.push({
+        price: listingDetails.get(keys[i]).price,
+        description: listingDetails.get(keys[i]).description,
+        itemId: listingDetails.get(keys[i]).itemId,
+        sellerUsername: listingDetails.get(keys[i]).sellerUsername
+      });
+    }
+  }
+
+  res.send(JSON.stringify({ success: true, selling: filteredsellingList }));
+});
 
 //SERVER PORTS, DO NOT DELETE
 app.listen(process.env.PORT || 3000);
