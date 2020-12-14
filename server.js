@@ -286,9 +286,9 @@ app.get("/cart", (req, res) => {
   let soldItems = []
   let filteredCart_checkout = []
   let purchaseList = new Map()
+  
 app.post("/checkout", (req, res) => {
   let givenToken = req.headers.token;
-  console.log("givenToken", givenToken)
   let buyerUsername = tokenUsername.get(givenToken)
   
   if (tokenUsername.has(givenToken) == false) {
@@ -302,20 +302,13 @@ app.post("/checkout", (req, res) => {
       soldItems.push(cart[i+1].itemId)
     }
   }
-  console.log("filteredCart_checkout", filteredCart_checkout)
+ 
   if (filteredCart_checkout.length === 0) {
     res.send(JSON.stringify({ success: false, reason: "Empty cart" }));
     return;
   }
-  console.log("soldItems", soldItems)
-  // for (let i = 0; i < soldItems.length; i++){
-  //   for (let j = 0; j < soldItems.length; j++){
-  //     if (soldItems[i] == soldItems[j] && i !== j){
-  //     res.send(JSON.stringify({ success: false, reason: "Item in cart no longer available" }));
-  //     return;
-  // }
-  //     }
-  //   }
+  
+
   
    for (let i = 0; i < filteredCart_checkout.length; i++){
     for (let j = 0; j < filteredCart_checkout.length; j++){
@@ -420,17 +413,61 @@ app.post("/chat-messages", (req, res) => {
   res.send(JSON.stringify({ success: true, messages: filteredChatLog }));
 });
 
+  let shippedItems = new Map()
+  
 app.post("/ship", (req, res) => {
   let givenToken = req.headers.token;
-  let buyerUsername = tokenUsername.get(givenToken)
+  let givenUsername = tokenUsername.get(givenToken)
   let parsed = JSON.parse(req.body);
   let listingId = parsed.itemid;
   
+  if (soldItems.includes(listingId) == false){
+    res.send(JSON.stringify({ success: false, reason: "Item was not sold" }));
+    return;
+  }
+  
+  if (shippedItems.has(listingId)){
+    res.send(JSON.stringify({ success: false, reason: "Item has already shipped" }));
+    return;
+  }
   
   
+  if (listingDetails.has(listingId) == false || (listingDetails.get(listingId).sellerUsername) !== givenUsername) {
+    res.send(JSON.stringify({ success: false, reason: "User is not selling that item" }));
+    return;
+  }
   
-  res.send(JSON.stringify({ success: true,}));
+  shippedItems.set(listingId, {status: "shipped"})
+  res.send(JSON.stringify({ success: true}));
 });
+
+
+
+app.get("/status", (req, res) => {
+ let givenItemId = req.query.itemid
+ 
+ console.log("soldItems", soldItems)
+  console.log("shippedItems", shippedItems) 
+  
+  if (soldItems.includes(givenItemId) == false){
+      res.send(JSON.stringify({ success: false, reason: "Item not sold" }));
+     return;
+  }
+  
+  if (shippedItems.has(givenItemId) == false){
+     res.send(JSON.stringify({ success: true, status: "not-shipped" }));
+     return;
+  }
+
+  res.send(JSON.stringify({ success: true, status: "shipped"}));
+});
+
+
+
+
+
+
+
 
 //SERVER PORTS, DO NOT DELETE
 app.listen(process.env.PORT || 3000);
